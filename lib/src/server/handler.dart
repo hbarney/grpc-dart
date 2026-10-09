@@ -458,10 +458,20 @@ class ServerHandler extends ServiceCall {
 
   /// Sink incoming requests. This is used when an error has already been
   /// reported, but we still need to consume the request stream from the client.
+  ///
+  /// The subscription is paused in [_onDataIdle] while the method is resolved
+  /// and the interceptors run, so it has to be resumed here: without that, a
+  /// call refused before its handler ran never consumes the request body. The
+  /// body's frames then sit undispatched in the connection-level queue, their
+  /// flow-control credit is never returned to the peer, and the stream's queue
+  /// entry outlives the stream itself. `resume()` on a subscription that was
+  /// not paused is a no-op, so this is safe on the paths that reach here
+  /// without the pause.
   void _sinkIncoming() {
     _incomingSubscription!
       ..onData((_) {})
-      ..onDone(_onDone);
+      ..onDone(_onDone)
+      ..resume();
   }
 
   void _sendError(GrpcError error, [StackTrace? trace]) {

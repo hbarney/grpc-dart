@@ -1,5 +1,9 @@
 ## 5.2.0
 
+- Fix the server not consuming a request body on early-error paths:
+  `_sinkIncoming` now resumes the subscription `_onDataIdle` paused, so a call
+  refused before its handler ran no longer leaks the connection's flow-control
+  credit or leaves a stream queue entry behind.
 - Update default `user-agent` header from `dart-grpc/2.0.0` to the gRPC HTTP/2
   specification format `grpc-dart/<package_version> (dart/<sdk_version>)` (and
   `grpc-web-dart/<package_version>` for `X-User-Agent` on gRPC-Web).
